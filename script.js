@@ -127,13 +127,17 @@ class Juego {
         this.baterias.forEach(bateria => bateria.actualizar(deltaTime));
 
         // Actualizar misiles de defensa
-        this.misilDefensas.forEach(misil => misil.actualizar(deltaTime));
+        this.misilDefensas.forEach(misil => {
+            misil.actualizar(deltaTime);
 
-        // Si el misil acaba de llegar, crea una explosion
-        if (misil.llegado){
-            const explosion = new Explosion(misil.objetivoX, misil.objetivoY);
-            this.explosiones.push(explosion);
-        }
+            // Si el misil acaba de llegar, crea una explosion
+            if (misil.llegado){
+                const explosion = new Explosion(misil.objetivoX, misil.objetivoY);
+                this.explosiones.push(explosion);
+            }
+        });
+        
+        
         // Eliminar misiles de defensa que han llegado
         this.misilDefensas = this.misilDefensas.filter(misil => !misil.llegado);
 
