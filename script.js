@@ -86,6 +86,10 @@ class Juego {
         this.misilDefensas = [];
         this.explosiones = [];
 
+        // Reset oleada
+        this.misilesLanzados = 0;
+        this.tiempoDesdeUltimaOleada = 0;
+
         // Crear ciudades
         const numCiudades = 6;
         const espaciado = canvas.width / (numCiudades + 1);
@@ -564,9 +568,9 @@ class MisilEnemigo{
         if (!this.destruido && !this.impacto) {
             // Dibujar la estela (líneas rojas que se desvanecen)
             for (let i = 0; i < this.estela.length - 1; i++) {
-                const opacidad = i / this.estela.length;  // Se desvanece gradualmente
+                const opacidad = (i + 1) / this.estela.length;  // Se desvanece gradualmente
                 ctx.strokeStyle = `rgba(255, 0, 0, ${opacidad})`;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.moveTo(this.estela[i].x, this.estela[i].y);
                 ctx.lineTo(this.estela[i + 1].x, this.estela[i + 1].y);
