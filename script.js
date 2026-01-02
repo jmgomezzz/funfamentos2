@@ -47,7 +47,7 @@ spriteBateria.src = 'sprites/3LanzaMisil.png';
 class Juego {
     constructor(){
         // Estado del juego
-        this.estado = 'menu'; // 'menu', 'jugando', 'pausa', 'gameover'
+        this.estado = 'menu'; // 'menu', 'jugando', 'pausa', 'gameover', 'entre oleadas'
 
         // Estadísticas
         this.puntuacion = 0;
@@ -69,6 +69,13 @@ class Juego {
         this.misilesEnOleada = 5;
         this.misilesLanzados = 0;
 
+        // Sistema de bonus IMPORTANTE MEMORIA JOSE MANUEL
+        this.calculandoBonis = false;
+        this.bonusCiudades = 0;
+        this.bonusMisiles = 0;
+        this.tiempoMostrandoBonus = 0;
+        this.duracionBonus = 3000; // 3 segundos
+
         // Log para comprobar que se inicia
         console.log('Juego creado');
     }
@@ -85,8 +92,10 @@ class Juego {
         this.misilEnemigos = [];
         this.misilDefensas = [];
         this.explosiones = [];
-
-        // Reset oleada
+        
+        // Reset al sistema de oleadas
+        this.intervalMisiles = 2000;
+        this.misilesEnOleada = 5;
         this.misilesLanzados = 0;
         this.tiempoDesdeUltimaOleada = 0;
 
@@ -133,6 +142,16 @@ class Juego {
     }
 
     actualizar(deltaTime){
+        // Si estamos mostrando bonus, solo contar tiempo
+        if (this.estado === 'entreOleadas'){
+            this.tiempoMostrandoBonus += deltaTime;
+            
+            // Después de 3 segundos, iniciamos siguiente nivel
+            if (this.tiempoMostrandoBonus >= this.duracionBonus){
+                this.iniciarSiguienteNivel();
+            }
+            return; // No actualizar nada más
+        }
         // Actualizar baterias
         this.baterias.forEach(bateria => bateria.actualizar(deltaTime));
 
@@ -242,22 +261,57 @@ class Juego {
     }
 
     siguienteOleada(){
+        // Cambiar estado entre oleadas
+        this.estado = 'entre oleadas';
+        this.calculandoBonis = true;
+        this.tiempoMostrandoBonus = 0;
+
+        // Calcular bonus
+        const ciudadesVivas = this.ciudades.filter(c => c.intacta).length;
+        const misilesRestantes = this.baterias.reduce((total, bateria) => total + bateria.misilDisponibles, 0);
+        
+        this.bonusCiudades = ciudadesVivas * 100;
+        this.bonusMisiles = misilesRestantes * 5;
+        const bonusTotal = this.bonusCiudades + this.bonusMisiles;
+        this.puntuacion += bonusTotal;
+        
+        console.log(`🎉 Oleada ${this.nivel} completada!`);
+        console.log(`   Ciudades: ${ciudadesVivas} × 100 = ${this.bonusCiudades}`);
+        console.log(`   Misiles: ${misilesRestantes} × 5 = ${this.bonusMisiles}`);
+        console.log(`   BONUS TOTAL: ${bonusTotal}`);
+    }
+
+    iniciarSiguienteNivel(){
+        // Aumentar nivel y dificultad
         this.nivel++;
-        this.misilesEnOleada += 5; // Aumentamos los misiles por oleada
-        this.intervalMisiles = Math.max(500, this.intervalMisiles - 200); // Disminuimos el intervalo pero no menos de 500ms
+        this.misilesEnOleada += 5;
+        this.intervalMisiles = Math.max(500, this.intervalMisiles - 200);
         this.misilesLanzados = 0;
         this.tiempoDesdeUltimaOleada = 0;
 
-        // Restauramos algunos misiles en las baterias
+        // Restaurar algunos misiles
         this.baterias.forEach(bateria => {
-            bateria.misilDisponibles = Math.min(10, bateria.misilDisponibles + 5); // Maximo 10 misiles
+            bateria.misilDisponibles = Math.min(10, bateria.misilDisponibles + 5);
         });
+
+        // Volver a estado jugando
+        this.estado = 'jugando';
+        this.calculandoBonus = false;
+
+        console.log(`▶️ Nivel ${this.nivel} iniciado - Dificultad: ${this.misilesEnOleada} misiles cada ${this.intervalMisiles}ms`);
+    
     }
 
     dibujar(){
         // Limpiamos el canvas (lo ponemos todo negro)
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Si estamos en la panralla del bonus
+        if (this.estado === 'entre oleadas'){
+            this.dibujarPantallaBonus();
+            return;
+        }
 
 
         //Dibujar las ciudades
@@ -278,6 +332,41 @@ class Juego {
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
         levelElement.textContent = this.nivel;
+    }
+
+    dibujarPantallaBonus(){
+        // Titulo
+        ctx.fillStyle = '#00FF00';
+        ctx.font = 'bold 48px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`OLEADA ${this.nivel} COMPLETADA`, canvas.width / 2, 150);
+
+        // Bonus ciudades
+        ctx.font = '32px monospace';
+        ctx.fillStyle = '#FFFF00';
+        const ciudadesVivas = this.ciudades.filter(c => c.intacta).length;
+        ctx.fillText(`CIUDADES: ${ciudadesVivas} × 100 = ${this.bonusCiudades}`, canvas.width / 2, 250);
+
+        // Bonus misiles
+        const misilesRestantes = this.baterias.reduce((total, b) => total + b.misilDisponibles, 0);
+        ctx.fillText(`MISILES: ${misilesRestantes} × 5 = ${this.bonusMisiles}`, canvas.width / 2, 310);
+
+        //Bonus total
+        ctx.fillStyle = '#FF00FF';
+        ctx.font = 'bold 40px monospace';
+        const bonusTotal = this.bonusCiudades + this.bonusMisiles;
+        ctx.fillText(`BONUS TOTAL: ${bonusTotal}`, canvas.width / 2, 400);
+
+        // Pts totales
+        ctx.fillStyle = '#00FFFF';
+        ctx.font = '28px monospace';
+        ctx.fillText(`PUNTUACIÓN: ${this.puntuacion}`, canvas.width / 2, 480);
+        
+        // Siguiente nivel
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '20px monospace';
+        const tiempoRestante = Math.ceil((this.duracionBonus - this.tiempoMostrandoBonus) / 1000);
+        ctx.fillText(`Siguiente nivel en ${tiempoRestante}...`, canvas.width / 2, 550);
     }
 
 
