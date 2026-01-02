@@ -146,6 +146,10 @@ class Juego {
             }
         }
 
+        //Veridicar si la oleada se acabó
+        else if (this.misilEnemigos.length === 0 && this.misilesLanzados >= this.misilesEnOleada){
+            this.siguienteOleada();
+        }
         // Actualizar misiles enemigos
         this.misilEnemigos.forEach(misil => misil.actualizar(deltaTime));
 
@@ -235,6 +239,19 @@ class Juego {
         }
 
         console.log('Actualizando juego, deltaTime:', deltaTime);
+    }
+
+    siguienteOleada(){
+        this.nivel++;
+        this.misilesEnOleada += 5; // Aumentamos los misiles por oleada
+        this.intervalMisiles = Math.max(500, this.intervalMisiles - 200); // Disminuimos el intervalo pero no menos de 500ms
+        this.misilesLanzados = 0;
+        this.tiempoDesdeUltimaOleada = 0;
+
+        // Restauramos algunos misiles en las baterias
+        this.baterias.forEach(bateria => {
+            bateria.misilDisponibles = Math.min(10, bateria.misilDisponibles + 5); // Maximo 10 misiles
+        });
     }
 
     dibujar(){
