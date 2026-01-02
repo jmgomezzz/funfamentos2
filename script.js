@@ -123,7 +123,14 @@ class Juego {
     }
 
     actualizar(deltaTime){
-        // TODO: actualizar los objetos del juego
+        // Actualizar baterias
+        this.baterias.forEach(bateria => bateria.actualizar(deltaTime));
+
+        // Actualizar misiles de defensa
+        this.misilDefensas.forEach(misil => misil.actualizar(deltaTime));
+
+        // Eliminar misiles de defensa que han llegado
+        this.misilDefensas = this.misilDefensas.filter(misil => !misil.llegado);
 
         console.log('Actualizando juego, deltaTime:', deltaTime);
     }
@@ -140,6 +147,9 @@ class Juego {
         //Dibujar las baterias
         this.baterias.forEach(bateria => bateria.dibujar(ctx));
 
+        //Dibujar los misiles de defensa
+        this.misilDefensas.forEach(misil => misil.dibujar(ctx));
+
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
         levelElement.textContent = this.nivel;
@@ -150,6 +160,50 @@ class Juego {
 const juego = new Juego();
 
 console.log('Juego listo')
+
+// =======================
+// EVENT LISTENERS
+// =======================
+
+// Hacemos click en el canvas para disparar
+canvas.addEventListener('click', (evento) => {
+    if (juego.estado === 'jugando'){
+        //Obtenemos la posición del click relativa al canvas
+        const rect = canvas.getBoundingClientRect(); // Rect es el rectangulo del canvas
+        const clickX = evento.clientX - rect.left;
+        const clickY = evento.clientY - rect.top;
+
+        // Encontrar la bateria mas cercana
+        let bateriaDisparar = null;
+        let distanciaMinima = Infinity;
+
+        for (const bateria of juego.baterias){
+            if (bateria.misilDisponibles > 0){
+                const distancia = Math.sqrt(
+                    Math.pow(clickX - bateria.x, 2) +
+                    Math.pow(clickY - bateria.y, 2)
+                );
+
+                if (distancia < distanciaMinima){
+                    distanciaMinima = distancia;
+                    bateriaDisparar = bateria;
+                }
+            }
+        }
+
+        // Disparar si hay alguna disponible
+        if (bateriaDisparar){
+            const misil = new MisilDefensa(
+                bateriaDisparar.x,
+                bateriaDisparar.y,
+                clickX,
+                clickY
+            );
+            juego.misilDefensas.push(misil)
+            bateriaDisparar.disparar(clickX, clickY); // Actualizamos el contador de misiles
+        }
+    }
+})
 
 // Bindeo del boton
 const botonIniciar = document.getElementById('startBtn');
@@ -204,7 +258,7 @@ class Bateria {
     }
     puedeDisparar(){
         // Verificamos tanto si tiene misiles como si se ha acabado el cooldown
-        return this.misiles > 0 && this.cooldown <= 0;
+        return this.misilDisponibles > 0 && this.cooldown <= 0;
     }
 
     disparar(objetivoX, objetivoY){
@@ -249,4 +303,70 @@ class Bateria {
         }
     }
             
+}
+
+// ================================
+// CLASE MISILDEFENSA
+// ================================
+class MisilDefensa {
+    constructor(inicioX, inicioY, objetivoX, objetivoY){
+        this.x = inicioX;
+        this.y = inicioY;
+        this.objetivoX = objetivoX;
+        this.objetivoY = objetivoY;
+        this.velocidad = 0.3;
+        this.llegado = false; // Para saber si ha llegado
+
+        // Calcular la dirección del movimiento
+        const dx = objetivoX - inicioX;
+        const dy = objetivoY - inicioY;
+        const distancia = Math.sqrt(dx * dx + dy * dy);
+
+        // Normalizamos la dirección
+        this.dirX = dx / distancia;
+        this.dirY = dy / distancia;
+    }
+
+    actualizar(deltaTime){
+        if (!this.llegado){
+            // Movemos el misil hacia el objetivo
+            this.x += this.dirX * this.velocidad * deltaTime;
+            this.y += this.dirY * this.velocidad * deltaTime;
+
+            // Verificamos si ha llegado al objetivo usanfo distancia euclidea
+            const distancia = Math.sqrt(
+                Math.pow(this.objetivoX - this.x, 2) +
+                Math.pow(this.objetivoY - this.y, 2)
+            );
+
+            if (distancia <5){ // No es lo mas preciso del mundo pero vale
+                this.llegado = true;
+            }
+        }
+    }
+
+    dibujar(ctx){
+        if (!this.llegado){
+            // Dibujamos la estela del misil
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.objetivoX, this.objetivoY);
+            ctx.stroke();
+
+            // Calculamos el angulo de rotacion para que quede bien
+            const angle = Math.atan2(this.dirY, this.dirX);
+
+            // Dibujamos el sprite rotado
+            ctx.save(); // Guardamos el estado actual
+            ctx.translate(this.x, this.y);
+            ctx.rotate(angle + Math.PI / 2); // Rotamos 90 grados para que apunte bien
+
+            const misilAncho = 8;
+            const misilAlto = 16;
+            ctx.drawImage(spriteMisil, -misilAncho / 2, -misilAlto / 2, misilAncho, misilAlto);
+            ctx.restore(); // Restauramos el estado anterior
+        }
+    }
 }
