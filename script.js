@@ -262,7 +262,7 @@ class Juego {
 
     siguienteOleada(){
         // Cambiar estado entre oleadas
-        this.estado = 'entre oleadas';
+        this.estado = 'entreOleadas';
         this.calculandoBonis = true;
         this.tiempoMostrandoBonus = 0;
 
@@ -337,34 +337,35 @@ class Juego {
     dibujarPantallaBonus(){
         // Titulo
         ctx.fillStyle = '#00FF00';
-        ctx.font = 'bold 48px monospace';
+        ctx.font = 'bold 32px "Press Start 2P", monospace'; 
         ctx.textAlign = 'center';
         ctx.fillText(`OLEADA ${this.nivel} COMPLETADA`, canvas.width / 2, 150);
 
         // Bonus ciudades
-        ctx.font = '32px monospace';
+        ctx.font = '32px "Press Start 2P", monospace';
         ctx.fillStyle = '#FFFF00';
         const ciudadesVivas = this.ciudades.filter(c => c.intacta).length;
         ctx.fillText(`CIUDADES: ${ciudadesVivas} × 100 = ${this.bonusCiudades}`, canvas.width / 2, 250);
 
         // Bonus misiles
         const misilesRestantes = this.baterias.reduce((total, b) => total + b.misilDisponibles, 0);
-        ctx.fillText(`MISILES: ${misilesRestantes} × 5 = ${this.bonusMisiles}`, canvas.width / 2, 310);
+        ctx.fillText(`MISILES: ${misilesRestantes} x 5`, canvas.width / 2, 340);
+        ctx.fillText(`= ${this.bonusMisiles}`, canvas.width / 2, 375);
 
         //Bonus total
         ctx.fillStyle = '#FF00FF';
-        ctx.font = 'bold 40px monospace';
+        ctx.font = 'bold 40px "Press Start 2P", monospace';
         const bonusTotal = this.bonusCiudades + this.bonusMisiles;
         ctx.fillText(`BONUS TOTAL: ${bonusTotal}`, canvas.width / 2, 400);
 
         // Pts totales
         ctx.fillStyle = '#00FFFF';
-        ctx.font = '28px monospace';
+        ctx.font = '28px "Press Start 2P", monospace';
         ctx.fillText(`PUNTUACIÓN: ${this.puntuacion}`, canvas.width / 2, 480);
         
         // Siguiente nivel
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '20px monospace';
+        ctx.font = '20px "Press Start 2P", monospace';
         const tiempoRestante = Math.ceil((this.duracionBonus - this.tiempoMostrandoBonus) / 1000);
         ctx.fillText(`Siguiente nivel en ${tiempoRestante}...`, canvas.width / 2, 550);
     }
