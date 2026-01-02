@@ -308,7 +308,7 @@ class Juego {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Si estamos en la panralla del bonus
-        if (this.estado === 'entre oleadas'){
+        if (this.estado === 'entreOleadas'){
             this.dibujarPantallaBonus();
             return;
         }
