@@ -141,6 +141,9 @@ class Juego {
         // Eliminar misiles de defensa que han llegado
         this.misilDefensas = this.misilDefensas.filter(misil => !misil.llegado);
 
+        // Actualizar explosiones
+        this.explosiones.forEach(explosion => explosion.actualizar(deltaTime));
+
         // Elimina explosiones inactivas
         this.explosiones = this.explosiones.filter(explosion => explosion.activa);
 
