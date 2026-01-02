@@ -169,8 +169,70 @@ class Juego {
         // Actualizar explosiones
         this.explosiones.forEach(explosion => explosion.actualizar(deltaTime));
 
+        // DETECTOR DE COLISIONES (explosiones y enemigos)
+        this.explosiones.forEach(explosion => {
+            if (explosion.activa){
+                this.misilEnemigos.forEach(misil => {
+                    if (!misil.destruido && !misil.impacto){
+                        if (explosion.colisionaConPunto(misil.x, misil.y)){
+                            misil.destruido = true;
+                            this.puntuacion += 25 + (this.explosiones.length * 5); // Puntos por destruir un misil, si haces cadena consigues mas, no se si eso esta en el juego original la vd pero bueno algo añade
+
+                            // Crear explosion
+                            const nuevaExplosion = new Explosion(misil.x, misil.y);
+                            this.explosiones.push(nuevaExplosion);
+                        }
+                    }
+                });
+            }
+        });
+
+        //Ahora misiles con objetivos
+        this.misilEnemigos.forEach(misil => {
+            if (misil.impacto && !misil.destruido) {
+                //Creamos una explosion en el punto de impacto
+                const explosionImpacto = new Explosion(misil.x, misil.y);
+                this.explosiones.push(explosionImpacto);
+
+                // Verificar colisión con ciudades
+                this.ciudades.forEach(ciudad => {
+                    if (ciudad.intacta) {
+                        const distancia = Math.sqrt(
+                            Math.pow(ciudad.x - misil.x, 2) + 
+                            Math.pow(ciudad.y - misil.y, 2)
+                        );
+                        if (distancia < 40) {  // Radio de colisión
+                            ciudad.destruir();
+                        }
+                    }
+                });
+
+                // Verificar colisión con baterías
+                this.baterias.forEach(bateria => {
+                    const distancia = Math.sqrt(
+                        Math.pow(bateria.x - misil.x, 2) + 
+                        Math.pow(bateria.y - misil.y, 2)
+                    );
+                    if (distancia < 50) {  // Radio de colisión
+                        bateria.misilDisponibles = 0;  // Batería destruida
+                    }
+                });
+            }
+        });
+
+        // Eliminar misiles enemigos destruidos o que impactaron
+        this.misilEnemigos = this.misilEnemigos.filter(misil => !misil.destruido && !misil.impacto);
+
+
         // Elimina explosiones inactivas
         this.explosiones = this.explosiones.filter(explosion => explosion.activa);
+
+        // Verificamos game over
+        const ciudadesVivas = this.ciudades.filter(c => c.intacta).length;
+        if (ciudadesVivas === 0) {
+            this.estado = 'gameover';
+            console.log('Game Over');
+        }
 
         console.log('Actualizando juego, deltaTime:', deltaTime);
     }
