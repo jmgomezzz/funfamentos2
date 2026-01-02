@@ -132,7 +132,7 @@ class Juego {
         this.ultimoTiempo = tiempoActual;
 
         // Actualzamos y dibujamos SOLO si está jugando
-        if (this.estado === 'jugando'){
+        if (this.estado === 'jugando' || this.estado === 'entreOleadas'){
             this.actualizar(deltaTime);
             this.dibujar();
         }
