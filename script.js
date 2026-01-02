@@ -178,7 +178,7 @@ canvas.addEventListener('click', (evento) => {
         let distanciaMinima = Infinity;
 
         for (const bateria of juego.baterias){
-            if (bateria.misilDisponibles > 0){
+            if (bateria.puedeDisparar()){
                 const distancia = Math.sqrt(
                     Math.pow(clickX - bateria.x, 2) +
                     Math.pow(clickY - bateria.y, 2)
