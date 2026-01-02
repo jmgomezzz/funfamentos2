@@ -129,8 +129,16 @@ class Juego {
         // Actualizar misiles de defensa
         this.misilDefensas.forEach(misil => misil.actualizar(deltaTime));
 
+        // Si el misil acaba de llegar, crea una explosion
+        if (misil.llegado){
+            const explosion = new Explosion(misil.objetivoX, misil.objetivoY);
+            this.explosiones.push(explosion);
+        }
         // Eliminar misiles de defensa que han llegado
         this.misilDefensas = this.misilDefensas.filter(misil => !misil.llegado);
+
+        // Elimina explosiones inactivas
+        this.explosiones = this.explosiones.filter(explosion => explosion.activa);
 
         console.log('Actualizando juego, deltaTime:', deltaTime);
     }
@@ -149,6 +157,9 @@ class Juego {
 
         //Dibujar los misiles de defensa
         this.misilDefensas.forEach(misil => misil.dibujar(ctx));
+
+        //Dibujar las explosiones
+        this.explosiones.forEach(explosion => explosion.dibujar(ctx));
 
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
@@ -368,5 +379,79 @@ class MisilDefensa {
             ctx.drawImage(spriteMisil, -misilAncho / 2, -misilAlto / 2, misilAncho, misilAlto);
             ctx.restore(); // Restauramos el estado anterior
         }
+    }
+}
+
+// ================================
+// CLASE EXPLOSION
+// ================================
+class Explosion {
+    constructor(x, y){
+        this.x = x;
+        this.y = y;
+        this.radioMaximo = 80;
+        this.radioActual = 0;
+        this.velocidadCrecimiento = 0.2; 
+        this.duracion = 2000;
+        this.tiempoVida = 0;
+        this.activa = true;
+    }
+
+    actualizar(deltaTime){
+        if (this.activa){
+            this.tiempoVida += deltaTime;
+
+            // Fase crecimiento
+            if (this.tiempoVida < this.duracion / 2){
+                this.radioActual += this.velocidadCrecimiento * deltaTime;
+                if (this.radioActual > this.radioMaximo){
+                    this.radioActual = this.radioMaximo;
+                }
+            }
+            // Fase decrecimiento
+            else {
+                this.radioActual -= this.velocidadCrecimiento * deltaTime;
+                if (this.radioActual < 0){
+                    this.radioActual = 0;
+                }
+            }
+            // Desactivar si ha terminado su vida
+            if (this.tiempoVida >= this.duracion){
+                this.activa = false;
+            }
+        }
+    }
+
+    dibujar(ctx){
+        if (this.activa && this.radioActual > 0){
+            // Calcular la opacidad basada en el tiempo de vida
+            const opacidad = 1 - (this.tiempoVida / this.duracion);
+            
+            // Dibujar círculo exterior (amarillo)
+            ctx.fillStyle = `rgba(255, 255, 0, ${opacidad * 0.6})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radioActual, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Dibujar círculo medio (naranja)
+            ctx.fillStyle = `rgba(255, 165, 0, ${opacidad * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radioActual * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Dibujar círculo interior (rojo)
+            ctx.fillStyle = `rgba(255, 50, 0, ${opacidad})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radioActual * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    // Calculamos las colisiones con el punto usando distancias con el radio actual
+    colisionaConPunto(x, y){
+        const distancia = Math.sqrt(
+            Math.pow(x - this.x, 2) +
+            Math.pow(y - this.y, 2)
+        );
+        return distancia <= this.radioActual;
     }
 }
