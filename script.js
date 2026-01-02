@@ -95,13 +95,13 @@ class Juego {
         const misilesIniciales = 10;
 
         // Bateria izquierda
-        this.baterias.push(new Bateria(100, bateriaPosY, misilesIniciales));
+        this.baterias.push(new Bateria(50, bateriaPosY, misilesIniciales));
 
         // Bateria central
         this.baterias.push(new Bateria(canvas.width / 2, bateriaPosY, misilesIniciales));
         
         // Bateria derecha
-        this.baterias.push(new Bateria(canvas.width - 100, bateriaPosY, misilesIniciales));
+        this.baterias.push(new Bateria(canvas.width - 50, bateriaPosY, misilesIniciales));
 
         // Iniciamos el bucle del juego
         this.bucleDelJuego(0);
@@ -139,7 +139,7 @@ class Juego {
 
         //Dibujar las baterias
         this.baterias.forEach(bateria => bateria.dibujar(ctx));
-        
+
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
         levelElement.textContent = this.nivel;
