@@ -63,6 +63,12 @@ class Juego {
         // Control del tiempo
         this.ultimoTiempo = 0;
 
+        // Sistema de oleadas
+        this.tiempoDesdeUltimaOleada = 0;
+        this.intervalMisiles = 2000;
+        this.misilesEnOleada = 5;
+        this.misilesLanzados = 0;
+
         // Log para comprobar que se inicia
         console.log('Juego creado');
     }
@@ -126,6 +132,21 @@ class Juego {
         // Actualizar baterias
         this.baterias.forEach(bateria => bateria.actualizar(deltaTime));
 
+        // Generacion de misiles
+        if (this.misilesLanzados < this.misilesEnOleada){
+            this.tiempoDesdeUltimaOleada += deltaTime;
+
+            if (this.tiempoDesdeUltimaOleada >= this.intervalMisiles){
+                this.generarMisilEnemigo();
+                this.tiempoDesdeUltimaOleada = 0;
+            }
+        }
+
+        // Actualizar misiles enemigos
+        this.misilEnemigos.forEach(misil => misil.actualizar(deltaTime));
+
+            
+
         // Actualizar misiles de defensa
         this.misilDefensas.forEach(misil => {
             misil.actualizar(deltaTime);
@@ -162,6 +183,9 @@ class Juego {
         //Dibujar las baterias
         this.baterias.forEach(bateria => bateria.dibujar(ctx));
 
+        //Dibujar los misiles enemigos
+        this.misilEnemigos.forEach(misil => misil.dibujar(ctx));
+
         //Dibujar los misiles de defensa
         this.misilDefensas.forEach(misil => misil.dibujar(ctx));
 
@@ -171,6 +195,27 @@ class Juego {
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
         levelElement.textContent = this.nivel;
+    }
+
+
+    generarMisilEnemigo(){
+        // Posicion aleatoria arriba
+        const inicioX = Math.random() * canvas.width;
+
+        //Elegir un objetivo aleatorio (ciudad o bateria)
+        const objetivos = [...this.ciudades, ...this.baterias];
+        const objetivosVivos = objetivos.filter(obj => {
+            if (obj instanceof Ciudad) return obj.intacta;
+            if (obj instanceof Bateria) return true;
+            return false;
+        });
+
+        if (objetivosVivos.length > 0) {
+            const objetivo = objetivosVivos[Math.floor(Math.random() * objetivosVivos.length)];
+            const misil = new MisilEnemigo(inicioX, objetivo.x, objetivo.y);
+            this.misilEnemigos.push(misil);
+            this.misilesLanzados++;
+        }
     }
 }
 
@@ -460,5 +505,85 @@ class Explosion {
             Math.pow(y - this.y, 2)
         );
         return distancia <= this.radioActual;
+    }
+}
+
+// =====================================
+// CLASE MISILENEMIGO
+// =====================================
+class MisilEnemigo{
+    constructor(inicioX, objetivoX, objetivoY){
+        this.x = inicioX;
+        this.y = 0; // Siempre salen de arriba
+        this.objetivoX = objetivoX;
+        this.objetivoY = objetivoY;
+        this.velocidad = 0.05;
+        this.destruido = false;
+        this.impacto = false;
+
+        // Calcular la dirección del movimiento
+        const dx = objetivoX - inicioX;
+        const dy = objetivoY - this.y;
+        const distancia = Math.sqrt(dx * dx + dy * dy);
+
+        // Normalizamos la dirección
+        this.dirX = dx / distancia;
+        this.dirY = dy / distancia;
+
+        // Array para guardar la estela
+        this.estela = [];
+        this.maxEstela = 20; // Numero maximo de puntos en la estela
+
+    }
+
+    actualizar(deltaTime){
+        if (!this.destruido && !this.impacto){
+            // Guardamos posicion actual en la estela
+            this.estela.push({x: this.x, y: this.y});
+            if (this.estela.length > this.maxEstela){
+                this.estela.shift(); // Eliminamos el punto mas antiguo
+            }
+
+            // Movemos el misil hacia el objetivo
+            this.x += this.dirX * this.velocidad * deltaTime;
+            this.y += this.dirY * this.velocidad * deltaTime;
+
+            //Verificamos si ha llegado al objetivo
+            const distancia = Math.sqrt(
+                Math.pow(this.objetivoX - this.x, 2) +
+                Math.pow(this.objetivoY - this.y, 2)
+            );
+
+            if (distancia <5){ // Sigue sin ser lo mas preciso del mundo lol
+                this.impacto = true;
+            }
+        }
+    }
+
+    dibujar(ctx){
+        if (!this.destruido && !this.impacto) {
+            // Dibujar la estela (líneas rojas que se desvanecen)
+            for (let i = 0; i < this.estela.length - 1; i++) {
+                const opacidad = i / this.estela.length;  // Se desvanece gradualmente
+                ctx.strokeStyle = `rgba(255, 0, 0, ${opacidad})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(this.estela[i].x, this.estela[i].y);
+                ctx.lineTo(this.estela[i + 1].x, this.estela[i + 1].y);
+                ctx.stroke();
+            }
+            
+            // Dibujar el misil enemigo
+            ctx.fillStyle = '#FF0000';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Dibujar un punto brillante en el centro
+            ctx.fillStyle = '#FFFF00';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 }
