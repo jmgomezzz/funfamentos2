@@ -59,6 +59,14 @@ class Juego {
         this.explosiones = [];
         this.ciudades = [];
         this.baterias = [];
+        this.ufos = [];
+        this.aviones = [];
+
+        //Sistema aparicion avion/ufo
+        this.tiempoDesdeUltimoUFO = 0;
+        this.intervaloUFO = 15000; // UFO cada 15 segundos
+        this.tiempoDesdeUltimoAvion = 0;
+        this.intervaloAvion = 10000; // Avión cada 10 segundos
 
         // Control del tiempo
         this.ultimoTiempo = 0;
@@ -92,12 +100,16 @@ class Juego {
         this.misilEnemigos = [];
         this.misilDefensas = [];
         this.explosiones = [];
+        this.ufos = [];
+        this.aviones = [];
         
-        // Reset al sistema de oleadas
+        // Reset al sistema de oleadas y de aviones/ufo
         this.intervalMisiles = 2000;
         this.misilesEnOleada = 5;
         this.misilesLanzados = 0;
         this.tiempoDesdeUltimaOleada = 0;
+        this.tiempoDesdeUltimoUFO = 0;
+        this.tiempoDesdeUltimoAvion = 0;
 
         // Crear ciudades
         const numCiudades = 6;
@@ -136,9 +148,27 @@ class Juego {
             this.actualizar(deltaTime);
             this.dibujar();
         }
+        // Si está en pausa, solo dibujar (no actualizar)
+        else if (this.estado === 'pausa') {
+            this.dibujar();
+            this.dibujarPausaOverlay();
+        }
 
         // Pedimos el siguiente frame (actualizamos el bucle)
         requestAnimationFrame((t) => this.bucleDelJuego(t));
+    }
+    dibujarPausaOverlay(){
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#FFFF00';
+        ctx.font = 'bold 48px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSA', canvas.width / 2, canvas.height / 2);
+        
+        ctx.font = '20px "Press Start 2P", monospace';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('Click PAUSA para continuar', canvas.width / 2, canvas.height / 2 + 60);
     }
 
     actualizar(deltaTime){
@@ -164,6 +194,19 @@ class Juego {
                 this.tiempoDesdeUltimaOleada = 0;
             }
         }
+        // Generar ufos
+        this.tiempoDesdeUltimoUFO += deltaTime;
+        if (this.tiempoDesdeUltimoUFO >= this.intervaloUFO) {
+            this.ufos.push(new UFO());
+            this.tiempoDesdeUltimoUFO = 0;
+        }
+
+        // Generar aviones
+        this.tiempoDesdeUltimoAvion += deltaTime;
+        if (this.tiempoDesdeUltimoAvion >= this.intervaloAvion) {
+            this.aviones.push(new Avion());
+            this.tiempoDesdeUltimoAvion = 0;
+        }
 
         //Veridicar si la oleada se acabó
         else if (this.misilEnemigos.length === 0 && this.misilesLanzados >= this.misilesEnOleada){
@@ -172,7 +215,20 @@ class Juego {
         // Actualizar misiles enemigos
         this.misilEnemigos.forEach(misil => misil.actualizar(deltaTime));
 
-            
+        //Actualizar ufos
+        this.ufos.forEach(ufo => ufo.actualizar(deltaTime));
+        this.ufos = this.ufos.filter(ufo => !ufo.destruido && !ufo.fueraDePantalla());
+
+        //Actualizar aviones y sus disparos     
+        const objetivosVivos = this.ciudades.filter(c => c.intacta);
+        this.aviones.forEach(avion => {
+            const nuevoMisil = avion.actualizar(deltaTime, objetivosVivos);
+            if (nuevoMisil) {
+                this.misilEnemigos.push(nuevoMisil);
+            }
+        });
+        this.aviones = this.aviones.filter(avion => !avion.destruido && !avion.fueraDePantalla()); // Eliminar aviones destruidos o fuera de pantalla
+       
 
         // Actualizar misiles de defensa
         this.misilDefensas.forEach(misil => {
@@ -238,6 +294,27 @@ class Juego {
                     );
                     if (distancia < 50) {  // Radio de colisión
                         bateria.misilDisponibles = 0;  // Batería destruida
+                    }
+                });
+            }
+        });
+
+        //Ahora las colisiones pero con lso ufos y aviones
+        this.explosiones.forEach(explosion => {
+            if (explosion.activa) {
+                // UFOs
+                this.ufos.forEach(ufo => {
+                    if (!ufo.destruido && explosion.colisionaConPunto(ufo.x + ufo.ancho / 2, ufo.y + ufo.alto / 2)) {
+                        ufo.destruido = true;
+                        this.puntuacion += ufo.puntos;
+                    }
+                });
+                
+                // Aviones
+                this.aviones.forEach(avion => {
+                    if (!avion.destruido && explosion.colisionaConPunto(avion.x + avion.ancho / 2, avion.y + avion.alto / 2)) {
+                        avion.destruido = true;
+                        this.puntuacion += avion.puntos;
                     }
                 });
             }
@@ -328,6 +405,11 @@ class Juego {
 
         //Dibujar las explosiones
         this.explosiones.forEach(explosion => explosion.dibujar(ctx));
+        //Dibujar ufos
+        this.ufos.forEach(ufo => ufo.dibujar(ctx));
+
+        //Dibujar aviones
+        this.aviones.forEach(avion => avion.dibujar(ctx));
 
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
@@ -445,6 +527,18 @@ canvas.addEventListener('click', (evento) => {
 const botonIniciar = document.getElementById('startBtn');
 botonIniciar.addEventListener('click', () => {
     juego.iniciar();
+});
+
+// Pausa
+const botonPausa = document.getElementById('pauseBtn');
+botonPausa.addEventListener('click', () => {
+    if (juego.estado === 'jugando') {
+        juego.estado = 'pausa';
+        console.log('⏸️ Juego pausado');
+    } else if (juego.estado === 'pausa') {
+        juego.estado = 'jugando';
+        console.log('▶️ Juego reanudado');
+    }
 });
 
 
@@ -736,14 +830,16 @@ class MisilEnemigo{
     dibujar(ctx){
         if (!this.destruido && !this.impacto) {
             // Dibujar la estela (líneas rojas que se desvanecen)
-            for (let i = 0; i < this.estela.length - 1; i++) {
-                const opacidad = (i + 1) / this.estela.length;  // Se desvanece gradualmente
-                ctx.strokeStyle = `rgba(255, 0, 0, ${opacidad})`;
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(this.estela[i].x, this.estela[i].y);
-                ctx.lineTo(this.estela[i + 1].x, this.estela[i + 1].y);
-                ctx.stroke();
+            if (this.estela.length > 1) {
+                for (let i = 0; i < this.estela.length - 1; i++) {
+                    const opacidad = (i + 1) / this.estela.length;  // Se desvanece gradualmente
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${opacidad})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(this.estela[i].x, this.estela[i].y);
+                    ctx.lineTo(this.estela[i + 1].x, this.estela[i + 1].y);
+                    ctx.stroke();
+                }
             }
             
             // Dibujar el misil enemigo
@@ -757,6 +853,102 @@ class MisilEnemigo{
             ctx.beginPath();
             ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
             ctx.fill();
+        }
+    }
+}
+
+// =====================================
+// CLASE UFO
+// =====================================
+class UFO {
+    constructor(){
+        this.y = 50 + Math.random() * 100; // Posicion vertical aleatoria
+        this.velocidad = 0.1 + Math.random() * 0.1; // Velocidad aleatoria
+        this.ancho = 40;
+        this.alto = 20;
+        this.destruido = false;
+        this.puntos = 300; // Bonus
+        // 50% de probabilidad de ir de izquierda a derecha o viceversa
+        if (Math.random() < 0.5) {
+            this.x = -this.ancho;
+            this.direccion = 1; // Derecha
+        } else {
+            this.x = canvas.width + this.ancho;
+            this.direccion = -1; // Izquierda
+        }
+
+    }
+
+    actualizar(deltaTime){
+        if (!this.destruido){
+            this.x += this.velocidad * deltaTime * this.direccion;
+        }
+    }
+
+    fueraDePantalla(){
+        return this.x < -this.ancho * 2 || this.x > canvas.width + this.ancho * 2; // Doble ancho para evitar que desaparezca de golpe
+
+    }
+    dibujar(ctx){
+        if (!this.destruido) {
+            // Dibujar sprite
+            ctx.drawImage(spriteNave, this.x, this.y, this.ancho, this.alto);
+        }
+    }
+}
+
+// ======================================
+// CLASE AVION
+// ======================================
+class Avion {
+    constructor() {
+        this.y = 80 + Math.random() * 80; // Altura aleatoria
+        this.velocidad = 0.15;
+        this.ancho = 60;
+        this.alto = 30;
+        this.destruido = false;
+        this.puntos = 200;
+        this.ultimoDisparo = 0;
+        this.intervaloDisparo = 1500; // Dispara cada 1.5 segundos
+        
+        // Dirección aleatoria
+        if (Math.random() < 0.5) {
+            this.x = -this.ancho;
+            this.direccion = 1;
+        } else {
+            this.x = canvas.width + this.ancho;
+            this.direccion = -1;
+        }
+    }
+    actualizar(deltaTime, objetivos) {
+        if (!this.destruido) {
+            this.x += this.velocidad * deltaTime * this.direccion;
+            this.ultimoDisparo += deltaTime;
+            
+            // Disparar misil si es momento
+            if (this.ultimoDisparo >= this.intervaloDisparo && objetivos.length > 0) {
+                this.ultimoDisparo = 0;
+                // Elegir objetivo aleatorio
+                const objetivo = objetivos[Math.floor(Math.random() * objetivos.length)];
+                return new MisilEnemigo(this.x + this.ancho / 2, objetivo.x, objetivo.y);
+            }
+        }
+        return null;
+    }
+    
+    fueraDePantalla() {
+        return this.x < -this.ancho * 2 || this.x > canvas.width + this.ancho * 2;
+    }
+    
+    dibujar(ctx) {
+        if (!this.destruido) {
+            ctx.save();
+            ctx.translate(this.x + this.ancho / 2, this.y + this.alto / 2);
+            if (this.direccion === -1) {
+                ctx.scale(-1, 1); // Voltear si va a la izquierda
+            }
+            ctx.drawImage(spriteAvion, -this.ancho / 2, -this.alto / 2, this.ancho, this.alto);
+            ctx.restore();
         }
     }
 }
