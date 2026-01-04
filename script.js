@@ -120,9 +120,9 @@ class Juego {
         this.ciudades.push(new Ciudad(260, ciudadPosY));
 
         // Grupo derecho
-        this.ciudades.push(new Ciudad(300 + 140, ciudadPosY));
-        this.ciudades.push(new Ciudad(300 + 200, ciudadPosY));
-        this.ciudades.push(new Ciudad(300 + 260, ciudadPosY));
+        this.ciudades.push(new Ciudad(350 + 140, ciudadPosY));
+        this.ciudades.push(new Ciudad(350 + 200, ciudadPosY));
+        this.ciudades.push(new Ciudad(350 + 260, ciudadPosY));
 
         // Crear baterias
         const bateriaPosY = canvas.height - 60;
