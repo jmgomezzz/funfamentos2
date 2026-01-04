@@ -656,10 +656,10 @@ class Bateria {
 
         if (this.misilDisponibles === 0) {
             // Sin misiles: mostrar "OUT"
-            ctx.drawImage(spriteOut, spriteX, spriteY, spriteAncho, spriteAlto);
+            ctx.drawImage(spriteOUT, spriteX, spriteY, spriteAncho, spriteAlto);
         } else if (this.misilDisponibles <= 3) {
             // Pocos misiles: mostrar "LOW"
-            ctx.drawImage(spriteLow, spriteX, spriteY, spriteAncho, spriteAlto);
+            ctx.drawImage(spriteLOW, spriteX, spriteY, spriteAncho, spriteAlto);
         }
 
     }
