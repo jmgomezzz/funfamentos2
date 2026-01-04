@@ -191,6 +191,11 @@ class Juego {
             }
             return; // No actualizar nada más
         }
+        // Por robustez, si estamos en gameover no actualizamos nada
+        if (this.estado === 'gameover'){
+            return;
+        }
+
         // Actualizar baterias
         this.baterias.forEach(bateria => bateria.actualizar(deltaTime));
 
@@ -399,6 +404,12 @@ class Juego {
             return;
         }
 
+        // Si estamos en la pantalla de Game Over
+        if (this.estado === 'gameover') {
+            this.dibujarPantallaGameOver();
+            return;
+        }
+
         //Dibujar el suelo
         const sueloY = canvas.height -100;
         const sueloAlto = 100;
@@ -467,6 +478,41 @@ class Juego {
         ctx.font = '20px "Press Start 2P", monospace';
         const tiempoRestante = Math.ceil((this.duracionBonus - this.tiempoMostrandoBonus) / 1000);
         ctx.fillText(`Siguiente nivel en ${tiempoRestante}...`, canvas.width / 2, 550);
+    }
+
+    dibujarPantallaGameOver(){
+        // Fondo rojo oscuro con transparencia
+        ctx.fillStyle = 'rgba(139, 0, 0, 0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Título GAME OVER
+        ctx.fillStyle = '#FF0000';
+        ctx.font = 'bold 64px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', canvas.width / 2, 150);
+
+        // Subtítulo
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '24px "Press Start 2P", monospace';
+        ctx.fillText('TODAS LAS CIUDADES', canvas.width / 2, 230);
+        ctx.fillText('HAN SIDO DESTRUIDAS', canvas.width / 2, 270);
+
+        // Estadísticas finales
+        ctx.fillStyle = '#FFFF00';
+        ctx.font = '28px "Press Start 2P", monospace';
+        ctx.fillText(`NIVEL ALCANZADO: ${this.nivel}`, canvas.width / 2, 350);
+
+        ctx.fillStyle = '#00FF00';
+        ctx.fillText(`PUNTUACION FINAL:`, canvas.width / 2, 410);
+        ctx.font = 'bold 48px "Press Start 2P", monospace';
+        ctx.fillText(`${this.puntuacion}`, canvas.width / 2, 470);
+
+        // Mensaje para reiniciar
+        ctx.fillStyle = '#00FFFF';
+        ctx.font = '18px "Press Start 2P", monospace';
+        ctx.fillText('Click INICIAR JUEGO', canvas.width / 2, 540);
+        ctx.fillText('para jugar de nuevo', canvas.width / 2, 570);
+
     }
 
 
@@ -828,20 +874,10 @@ class MisilEnemigo{
         this.dirX = dx / distancia;
         this.dirY = dy / distancia;
 
-        // Array para guardar la estela
-        this.estela = [];
-        this.maxEstela = 20; // Numero maximo de puntos en la estela
-
     }
 
     actualizar(deltaTime){
         if (!this.destruido && !this.impacto){
-            // Guardamos posicion actual en la estela
-            this.estela.push({x: this.x, y: this.y});
-            if (this.estela.length > this.maxEstela){
-                this.estela.shift(); // Eliminamos el punto mas antiguo
-            }
-
             // Movemos el misil hacia el objetivo
             this.x += this.dirX * this.velocidad * deltaTime;
             this.y += this.dirY * this.velocidad * deltaTime;
@@ -860,29 +896,23 @@ class MisilEnemigo{
 
     dibujar(ctx){
         if (!this.destruido && !this.impacto) {
-            // Dibujar la estela (líneas rojas que se desvanecen)
-            if (this.estela.length > 1) {
-                for (let i = 0; i < this.estela.length - 1; i++) {
-                    const opacidad = (i + 1) / this.estela.length;  // Se desvanece gradualmente
-                    ctx.strokeStyle = `rgba(255, 0, 0, ${opacidad})`;
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(this.estela[i].x, this.estela[i].y);
-                    ctx.lineTo(this.estela[i + 1].x, this.estela[i + 1].y);
-                    ctx.stroke();
-                }
-            }
+            ctx.strokeStyle = '#FF0000'; 
+            ctx.lineWidth = 1.5;  // Más fina que la verde 
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);  // Desde posición actual
+            ctx.lineTo(this.x, 0);  // Hasta el borde superior (su origen)
+            ctx.stroke();
             
-            // Dibujar el misil enemigo
+            // Dibujar el misil enemigo (cabeza)
             ctx.fillStyle = '#FF0000';
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
             ctx.fill();
             
             // Dibujar un punto brillante en el centro
             ctx.fillStyle = '#FFFF00';
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
             ctx.fill();
         }
     }
