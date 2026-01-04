@@ -46,6 +46,14 @@ spriteLOW.src = 'sprites/LOW.png';
 const spriteOUT = new Image();
 spriteOUT.src = 'sprites/OUT.png';
 
+// ============================================
+// CARGA DE SONIDO
+// ============================================
+const sonidoExplosion = new Audio();
+sonidoExplosion.src = 'sounds/explosion.mp3'; 
+sonidoExplosion.volume = 0.3; // Para no matar a nadie del susto
+
+
 
 //============================
 // Clase Juego. Controlamos el juego aqui
@@ -321,6 +329,10 @@ class Juego {
                     if (!ufo.destruido && explosion.colisionaConPunto(ufo.x + ufo.ancho / 2, ufo.y + ufo.alto / 2)) {
                         ufo.destruido = true;
                         this.puntuacion += ufo.puntos;
+
+                        // Crear explosion
+                        const nuevaExplosion = new Explosion(ufo.x + ufo.ancho / 2, ufo.y + ufo.alto / 2);
+                        this.explosiones.push(nuevaExplosion);
                     }
                 });
                 
@@ -329,6 +341,10 @@ class Juego {
                     if (!avion.destruido && explosion.colisionaConPunto(avion.x + avion.ancho / 2, avion.y + avion.alto / 2)) {
                         avion.destruido = true;
                         this.puntuacion += avion.puntos;
+
+                        // Crear explosion
+                        const nuevaExplosion = new Explosion(avion.x + avion.ancho / 2, avion.y + avion.alto / 2);
+                        this.explosiones.push(nuevaExplosion);
                     }
                 });
             }
@@ -791,6 +807,15 @@ class Explosion {
         this.duracion = 2000;
         this.tiempoVida = 0;
         this.activa = true;
+
+        this.reproducirSonido();
+    }
+    
+    reproducirSonido(){
+        // Clonamos el audio para permitir solapamiento
+        const sonido = sonidoExplosion.cloneNode();
+        sonido.volume = 0.3;
+        sonido.play();
     }
 
     actualizar(deltaTime){
@@ -864,6 +889,8 @@ class MisilEnemigo{
         this.velocidad = 0.05;
         this.destruido = false;
         this.impacto = false;
+        this.inicioX = inicioX;
+        this.inicioY = 0;
 
         // Calcular la dirección del movimiento
         const dx = objetivoX - inicioX;
@@ -899,8 +926,8 @@ class MisilEnemigo{
             ctx.strokeStyle = '#FF0000'; 
             ctx.lineWidth = 1.5;  // Más fina que la verde 
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y);  // Desde posición actual
-            ctx.lineTo(this.x, 0);  // Hasta el borde superior (su origen)
+            ctx.moveTo(this.inicioX, this.inicioY);  // Desde posición actual
+            ctx.lineTo(this.x, this.y);  // Hasta el borde superior (su origen)
             ctx.stroke();
             
             // Dibujar el misil enemigo (cabeza)
