@@ -40,6 +40,12 @@ spriteNave.src = 'sprites/Nave.png';
 const spriteBateria = new Image();
 spriteBateria.src = 'sprites/3LanzaMisil.png';
 
+const spriteLOW = new Image();
+spriteLOW.src = 'sprites/LOW.png';
+
+const spriteOUT = new Image();
+spriteOUT.src = 'sprites/OUT.png';
+
 
 //============================
 // Clase Juego. Controlamos el juego aqui
@@ -421,6 +427,10 @@ class Juego {
         // Actualizar UI
         scoreElement.textContent = this.puntuacion;
         levelElement.textContent = this.nivel;
+
+        //Contamos los misiles que tenemos y los mostramos 
+        const misilesTotales = this.baterias.reduce((total, bateria) => total + bateria.misilDisponibles, 0);
+        missilesElement.textContent = misilesTotales;
     }
 
     dibujarPantallaBonus(){
@@ -557,8 +567,8 @@ class Ciudad {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.ancho =40;
-        this.alto = 40;
+        this.ancho =50;
+        this.alto = 25;
         this.intacta = true;
     }
 
@@ -638,6 +648,20 @@ class Bateria {
                 misilDibujados++;
             }
         }
+        // Dibujar estado de la batería
+        const spriteAncho = 60;
+        const spriteAlto = 20;
+        const spriteX = this.x - spriteAncho / 2;
+        const spriteY = this.y + 15; // Debajo de los misiles
+
+        if (this.misilDisponibles === 0) {
+            // Sin misiles: mostrar "OUT"
+            ctx.drawImage(spriteOut, spriteX, spriteY, spriteAncho, spriteAlto);
+        } else if (this.misilDisponibles <= 3) {
+            // Pocos misiles: mostrar "LOW"
+            ctx.drawImage(spriteLow, spriteX, spriteY, spriteAncho, spriteAlto);
+        }
+
     }
             
 }
