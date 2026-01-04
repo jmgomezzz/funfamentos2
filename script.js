@@ -120,9 +120,9 @@ class Juego {
         this.ciudades.push(new Ciudad(260, ciudadPosY));
 
         // Grupo derecho
-        this.ciudades.push(new Ciudad(540, ciudadPosY));
-        this.ciudades.push(new Ciudad(600, ciudadPosY));
-        this.ciudades.push(new Ciudad(660, ciudadPosY));
+        this.ciudades.push(new Ciudad(canvas.width - 260, ciudadPosY));
+        this.ciudades.push(new Ciudad(canvas.width - 200, ciudadPosY));
+        this.ciudades.push(new Ciudad(canvas.width - 140, ciudadPosY));
 
         // Crear baterias
         const bateriaPosY = canvas.height - 60;
@@ -135,7 +135,7 @@ class Juego {
         this.baterias.push(new Bateria(canvas.width / 2 - 10, bateriaPosY, misilesIniciales));
         
         // Bateria derecha
-        this.baterias.push(new Bateria(canvas.width - 15, bateriaPosY, misilesIniciales));
+        this.baterias.push(new Bateria(canvas.width - 30, bateriaPosY, misilesIniciales));
 
         // Iniciamos el bucle del juego
         this.bucleDelJuego(0);
