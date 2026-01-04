@@ -389,7 +389,11 @@ class Juego {
             this.dibujarPantallaBonus();
             return;
         }
-
+        
+        //Dibujar el suelo
+        const sueloY = canvas.height -100;
+        const sueloAlto = 100;
+        ctx.drawImage(spriteTierra, 0, sueloY, canvas.width, sueloAlto);
 
         //Dibujar las ciudades
         this.ciudades.forEach(ciudad => ciudad.dibujar(ctx));
